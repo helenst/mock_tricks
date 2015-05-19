@@ -39,13 +39,20 @@ class MyTestCase(unittest.TestCase):
         # cheese.name = mock.Mock(return_value='Brie')
 
         # type() and PropertyMock can get around this
-        type(cheese).name = mock.PropertyMock(return_value='Brie')
-        self.assertEqual(cheese.name, 'Brie')
+        # This works, BUT this is bad as it will persist into later tests
+        # type(cheese).name = mock.PropertyMock(return_value='Brie')
+        # self.assertEqual(cheese.name, 'Brie')
 
-        # and side_effect can simulate multiple property values
-        type(cheese).name = mock.PropertyMock(side_effect=['Yarg', 'Stilton'])
-        self.assertEqual(cheese.name, 'Yarg')
-        self.assertEqual(cheese.name, 'Stilton')
+        # Keep it scoped to the local test
+        with mock.patch.object(Cheese, 'name',
+                               new_callable=mock.PropertyMock) as mock_name:
+            mock_name.return_value = 'Brie'
+            self.assertEqual(cheese.name, 'Brie')
+
+            # side_effect can still simulate multiple property values
+            mock_name.side_effect = ['Yarg', 'Stilton']
+            self.assertEqual(cheese.name, 'Yarg')
+            self.assertEqual(cheese.name, 'Stilton')
 
 
 if __name__ == '__main__':
